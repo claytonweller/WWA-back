@@ -1,7 +1,7 @@
 "use strict";
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 const morgan = require("morgan");
 const passport = require("passport");
 const bodyParser = require("body-parser");
@@ -10,7 +10,7 @@ const { router: usersRouter } = require("./users");
 const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
 const { router: disciplinesRouter } = require("./disciplines");
 
-mongoose.Promise = global.Promise;
+// mongoose.Promise = global.Promise;
 
 const { PORT, DATABASE_URL } = require("./config");
 
@@ -47,8 +47,14 @@ app.get("/api/protected", jwtAuth, (req, res) => {
   });
 });
 
-app.post("/api/send", jsonParser, (req, res) => {
+app.post("/api/message/:id", jsonParser, (req, res) => {
   // TODO gets a message from the website and then does some send grid stuff!
+  let theMessage = {
+    to: req.params.id,
+    message: req.body.message
+  };
+
+  res.json(theMessage);
 });
 
 app.use("*", (req, res) => {
@@ -59,44 +65,71 @@ app.use("*", (req, res) => {
 // assumes runServer has run and set `server` to a server object
 let server;
 
-function runServer(databaseUrl, port = PORT) {
+function runServer(port = PORT) {
   return new Promise((resolve, reject) => {
-    mongoose.connect(
-      databaseUrl,
-      err => {
-        if (err) {
-          return reject(err);
-        }
-        server = app
-          .listen(port, () => {
-            console.log(`Your app is listening on port ${port}`);
-            resolve();
-          })
-          .on("error", err => {
-            mongoose.disconnect();
-            reject(err);
-          });
-      }
-    );
+    server = app
+      .listen(port, () => {
+        console.log(`Your app is listening on port ${port}`);
+        resolve();
+      })
+      .on("error", err => {
+        mongoose.disconnect();
+        reject(err);
+      });
   });
 }
 
 function closeServer() {
-  return mongoose.disconnect().then(() => {
-    return new Promise((resolve, reject) => {
-      console.log("Closing server");
-      server.close(err => {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
+  return new Promise((resolve, reject) => {
+    console.log("Closing server");
+    server.close(err => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
     });
   });
 }
 
 if (require.main === module) {
-  runServer(DATABASE_URL).catch(err => console.error(err));
+  runServer().catch(err => console.error(err));
 }
 
 module.exports = { app, runServer, closeServer };
+
+// MONGOOSE SERVER CODE //
+// function runServer(databaseUrl, port = PORT) {
+//   return new Promise((resolve, reject) => {
+//     mongoose.connect(
+//       databaseUrl,
+//       err => {
+//         if (err) {
+//           return reject(err);
+//         }
+//         server = app
+//           .listen(port, () => {
+//             console.log(`Your app is listening on port ${port}`);
+//             resolve();
+//           })
+//           .on("error", err => {
+//             mongoose.disconnect();
+//             reject(err);
+//           });
+//       }
+//     );
+//   });
+// }
+
+// function closeServer() {
+//   return mongoose.disconnect().then(() => {
+//     return new Promise((resolve, reject) => {
+//       console.log("Closing server");
+//       server.close(err => {
+//         if (err) {
+//           return reject(err);
+//         }
+//         resolve();
+//       });
+//     });
+//   });
+// }
