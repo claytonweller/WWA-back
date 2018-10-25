@@ -1,39 +1,31 @@
-// Thist SQL query presumes that it's following a filterted 'f' array
-const createUserObject = (additionalFields = "") => {
-  return `
-  SELECT 
-  f.*,
-  json_agg(d.*) as disciplines
-  FROM filtered f
-  INNER JOIN user_disciplines d USING (user_id)
-  WHERE d.user_id = f.user_id
-  GROUP BY ${additionalFields}
-    f.user_id,
-    f.first_name,
-    f.last_name,
-    f.date_joined,
-    f.desired_projects,
-    f.bio,
-    f.dob,
-    f.city,
-    f.state,
-    f.equipment
-`;
+const bcrypt = require("bcryptjs");
+
+////// Useful functions ///////////
+const fixSingleQuotesForSQL = string => {
+  return string.replace("'", "''");
 };
 
-// These are fields that are ok to send to the client
-const returnableFields = `
-  users.first_name,
-  users.last_name,
-  users.date_joined,
-  users.desired_projects,
-  users.bio,
-  users.dob,
-  users.city,
-  users.state,
-  users.equipment,
-  users.user_id
-`;
+const validatePassword = function(pass, dbPass) {
+  return bcrypt.compare(pass, dbPass);
+};
+
+const hashPassword = function(password) {
+  return bcrypt.hash(password, 10);
+};
+
+/////// USERS - Database queries //////////
+
+// These are all the various filters that can be used to find artists/users
+
+const findAllUsers = () => {
+  return `
+  WITH filtered AS (
+    SELECT ${returnableFields}
+    FROM users
+  )
+  ${userTemplate(true)}
+  `;
+};
 
 const findUserById = id => {
   return `
@@ -44,7 +36,7 @@ const findUserById = id => {
     FROM users
     WHERE users.user_id = ${id}
   )
-  ${createUserObject("f.email,")}
+  ${userTemplate(true, "f.email,")}
   `;
 };
 
@@ -57,7 +49,21 @@ const findUserByEmail = email => {
     FROM users
     WHERE users.email = '${email}'
   )
-  ${createUserObject("f.email,")}
+  ${userTemplate(false, "f.email,")}
+  `;
+};
+
+const findUserForAuth = email => {
+  return `
+  WITH filtered AS (
+    SELECT
+      users.email,
+      users.password,
+      ${returnableFields}
+    FROM users
+    WHERE users.email = '${email}'
+  )
+  ${userTemplate(false, "f.email, f.password,")}
   `;
 };
 
@@ -66,62 +72,112 @@ const findUsersByDiscipline = discipline => {
     WITH filtered AS (
       WITH ids AS (
         SELECT user_id
-        FROM user_disciplines
-        WHERE user_disciplines.type = '${discipline}'
+        FROM ${completeUserDiscipline} complete
+        WHERE complete.type = '${discipline}'
       )    
       SELECT 
       ${returnableFields}
       FROM users
       INNER JOIN ids ON users.user_id = ids.user_id
     )
-    ${createUserObject()}
+    ${userTemplate(true)}
+  `;
+};
+
+// This SQL query presumes that it's following a filterted 'f' array
+const userTemplate = (complex = false, additionalFields = "") => {
+  // The complex constructor returns json object for a user with
+  // all of their associated disciplines. The simple one does not
+
+  let constructor = "FROM filtered f";
+  if (complex) {
+    constructor = `,
+      json_agg(d.*) as disciplines
+      FROM filtered f
+      INNER JOIN ${completeUserDiscipline} d USING (user_id)
+      WHERE d.user_id = f.user_id
+    `;
+  }
+
+  // 'additionalFields' is used to send back sensitive information
+  // like emails. It will only accesible by the user themselves
+  return `
+    SELECT 
+    f.*
+    ${constructor}
+    GROUP BY ${additionalFields}
+      f.user_id,
+      f.first_name,
+      f.last_name,
+      f.date_joined,
+      f.desired_projects,
+      f.bio,
+      f.dob,
+      f.city,
+      f.state,
+      f.equipment,
+      f.img_url
+  `;
+};
+
+// These are fields that are always ok to send to the client
+const returnableFields = `
+  users.first_name,
+  users.last_name,
+  users.date_joined,
+  users.desired_projects,
+  users.bio,
+  users.dob,
+  users.city,
+  users.state,
+  users.equipment,
+  users.user_id,
+  users.img_url
+`;
+
+// This adds the specific type to the user discipline
+const completeUserDiscipline = `
+  (
+    SELECT 
+      u.*,
+      k.type
+    FROM user_disciplines u
+    INNER JOIN discipline_types k ON u.type_id=k.type_id
+  )
+`;
+
+const createUser = user => {
+  return `
+    INSERT INTO users (  
+      first_name,
+      last_name,
+      date_joined,
+      dob,
+      city,
+      state,
+      email,
+      password
+    )
+    VALUES (
+      '${fixSingleQuotesForSQL(user.first_name)}',
+      '${fixSingleQuotesForSQL(user.last_name)}',
+      ${user.date_joined},
+      ${user.dob},
+      '${fixSingleQuotesForSQL(user.city)}',
+      '${user.state}',
+      '${user.email}',
+      '${user.password}'
+    )
   `;
 };
 
 module.exports = {
   findUserById,
   findUserByEmail,
-  findUsersByDiscipline
+  findUsersByDiscipline,
+  findAllUsers,
+  findUserForAuth,
+  createUser,
+  validatePassword,
+  hashPassword
 };
-
-////// OLD MONGODB STUFF ///////////
-
-// 'use strict';
-// const bcrypt = require('bcryptjs');
-// const mongoose = require('mongoose');
-
-// mongoose.Promise = global.Promise;
-
-// const UserSchema = mongoose.Schema({
-//   username: {
-//     type: String,
-//     required: true,
-//     unique: true
-//   },
-//   password: {
-//     type: String,
-//     required: true
-//   },
-//   firstName: {type: String, default: ''},
-//   lastName: {type: String, default: ''}
-// });
-
-// UserSchema.methods.serialize = function() {
-//   return {
-//     username: this.username || '',
-//     firstName: this.firstName || '',
-//     lastName: this.lastName || ''
-//   };
-// };
-
-// UserSchema.methods.validatePassword = function(password) {
-//   return bcrypt.compare(password, this.password);
-// };
-
-// UserSchema.statics.hashPassword = function(password) {
-//   return bcrypt.hash(password, 10);
-// };
-
-// const User = mongoose.model('User', UserSchema);
-
-// module.exports = {User};

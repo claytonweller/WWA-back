@@ -1,32 +1,218 @@
 "use strict";
 const express = require("express");
 const bodyParser = require("body-parser");
+const passport = require("passport");
 
 const {
   findUserById,
+  findUserByEmail,
   findUsersByDiscipline,
-  findUserByEmail
+  findAllUsers,
+  createUser,
+  hashPassword
 } = require("./models");
 const db = require("../db");
+const { jwtStrategy } = require("../auth");
 
+const jwtAuth = passport.authenticate("jwt", { session: false });
 const router = express.Router();
 const jsonParser = bodyParser.json();
+passport.use(jwtStrategy);
+router.use(jsonParser);
 
-router.get("/", jsonParser, (req, res, next) => {
-  db.query(findUsersByDiscipline(req.query.type))
-    .then(disciplines => res.json(disciplines.rows))
-    .catch(err => console.log(err));
-  // TODO
-  // POSSIBLE Pageing (Maybe not in MVP)
-});
+router.get("/", jwtAuth, (req, res, next) => {
+  // If the searcher is looking for a specific type of artist
+  // we get a dscipline type, and return all of those users.
+  if (req.query.type) {
+    return db
+      .query(findUsersByDiscipline(req.query.type))
+      .then(disciplines => res.json(disciplines.rows))
+      .catch(err => {
+        console.log(err);
+        res.status(500).json("Something went wrong on the server");
+      });
+  }
 
-router.get("/:id", jsonParser, (req, res) => {
-  db.query(findUserById(req.params.id))
+  // Otherwise we return all the artists. Eventurally I'll have to limit
+  // TODO: Limit responses
+  // TODO: Sort by some attribute
+  return db
+    .query(findAllUsers())
     .then(dbres => res.json(dbres.rows))
-    .catch(err => console.log(err));
+    .catch(err => {
+      console.log(err);
+      res.status(500).json("Something went wrong on the server");
+    });
 });
 
-router.put("/:id", jsonParser, (req, res) => {
+// Find a specic user's info
+router.get("/:id", jwtAuth, (req, res) => {
+  if (req.user.user_id != req.params.id) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: "User does not have access"
+    });
+  }
+
+  return db
+    .query(findUserById(req.params.id))
+    .then(dbres => res.json(dbres.rows))
+    .catch(err => {
+      console.log(err);
+      if (err.reason === "ValidationError") {
+        return res.status(err.code).json(err);
+      }
+      res.status(500).json({ code: 500, message: "Internal server error" });
+    });
+});
+
+// Post to register a new user
+// This only happens after the first step.
+// Needs a flag for the steps completed.
+router.post("/", (req, res) => {
+  const requiredFields = ["email", "password", "last_name", "first_name"];
+  const missingField = requiredFields.find(field => !(field in req.body));
+  if (missingField) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: "Missing field",
+      location: missingField
+    });
+  }
+
+  const stringFields = ["email", "password", "first_name", "last_name"];
+  const nonStringField = stringFields.find(
+    field => field in req.body && typeof req.body[field] !== "string"
+  );
+
+  if (nonStringField) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: "Incorrect field type: expected string",
+      location: nonStringField
+    });
+  }
+
+  const explicityTrimmedFields = ["email", "password"];
+  const nonTrimmedField = explicityTrimmedFields.find(
+    field => req.body[field].trim() !== req.body[field]
+  );
+
+  if (nonTrimmedField) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: "Cannot start or end with whitespace",
+      location: nonTrimmedField
+    });
+  }
+
+  const sizedFields = {
+    first_name: {
+      min: 1,
+      max: 20
+    },
+    last_name: {
+      min: 1,
+      max: 20
+    },
+    password: {
+      min: 8,
+      max: 72
+    }
+  };
+  const tooSmallField = Object.keys(sizedFields).find(
+    field =>
+      "min" in sizedFields[field] &&
+      req.body[field].trim().length < sizedFields[field].min
+  );
+  const tooLargeField = Object.keys(sizedFields).find(
+    field =>
+      "max" in sizedFields[field] &&
+      req.body[field].trim().length > sizedFields[field].max
+  );
+
+  if (tooSmallField || tooLargeField) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: tooSmallField
+        ? `Must be at least ${sizedFields[tooSmallField].min} characters long`
+        : `Must be at most ${sizedFields[tooLargeField].max} characters long`,
+      location: tooSmallField || tooLargeField
+    });
+  }
+
+  let {
+    email,
+    password,
+    first_name,
+    last_name,
+    dob = 1538323879,
+    city = "",
+    state = "",
+    date_joined = Date.now()
+  } = req.body;
+
+  first_name = first_name.trim();
+  last_name = last_name.trim();
+  city = city.trim();
+
+  let userObject = {
+    email,
+    password,
+    first_name,
+    last_name,
+    dob,
+    city,
+    state,
+    date_joined
+  };
+
+  return hashPassword(password)
+    .then(hash => {
+      userObject.password = hash;
+      return db.query(findUserByEmail(email));
+    })
+    .then(dbres => {
+      if (dbres.rows[0]) {
+        return Promise.reject({
+          code: 422,
+          reason: "ValidationError",
+          message: "email already taken",
+          location: "email"
+        });
+      }
+
+      return db.query(createUser(userObject));
+    })
+    .then(() => {
+      return db.query(findUserByEmail(email));
+    })
+    .then(dbres => {
+      return res.json(dbres.rows);
+    })
+    .catch(err => {
+      console.log(err);
+      if (err.reason === "ValidationError") {
+        return res.status(err.code).json(err);
+      }
+      res.status(500).json({ code: 500, message: "Internal server error" });
+    });
+});
+
+router.put("/:id", jwtAuth, (req, res) => {
+  if (req.user.user_id != req.params.id) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: "User does not have access"
+    });
+  }
+
   const updatedableFields = [
     "first_name",
     "last_name",
@@ -173,145 +359,5 @@ router.put("/:id", jsonParser, (req, res) => {
       res.status(500).json({ code: 500, message: "Internal server error" });
     });
 });
-
-// Post to register a new user
-// This only happens after the first step.
-// Needs a flag for the steps completed.
-router.post("/", jsonParser, (req, res) => {
-  const requiredFields = ["email", "password", "last_name", "first_name"];
-  const missingField = requiredFields.find(field => !(field in req.body));
-  if (missingField) {
-    return res.status(422).json({
-      code: 422,
-      reason: "ValidationError",
-      message: "Missing field",
-      location: missingField
-    });
-  }
-
-  const stringFields = ["email", "password", "first_name", "last_name"];
-  const nonStringField = stringFields.find(
-    field => field in req.body && typeof req.body[field] !== "string"
-  );
-
-  if (nonStringField) {
-    return res.status(422).json({
-      code: 422,
-      reason: "ValidationError",
-      message: "Incorrect field type: expected string",
-      location: nonStringField
-    });
-  }
-
-  const explicityTrimmedFields = ["email", "password"];
-  const nonTrimmedField = explicityTrimmedFields.find(
-    field => req.body[field].trim() !== req.body[field]
-  );
-
-  if (nonTrimmedField) {
-    return res.status(422).json({
-      code: 422,
-      reason: "ValidationError",
-      message: "Cannot start or end with whitespace",
-      location: nonTrimmedField
-    });
-  }
-
-  const sizedFields = {
-    first_name: {
-      min: 1,
-      max: 20
-    },
-    last_name: {
-      min: 1,
-      max: 20
-    },
-    password: {
-      min: 8,
-      max: 72
-    }
-  };
-  const tooSmallField = Object.keys(sizedFields).find(
-    field =>
-      "min" in sizedFields[field] &&
-      req.body[field].trim().length < sizedFields[field].min
-  );
-  const tooLargeField = Object.keys(sizedFields).find(
-    field =>
-      "max" in sizedFields[field] &&
-      req.body[field].trim().length > sizedFields[field].max
-  );
-
-  if (tooSmallField || tooLargeField) {
-    return res.status(422).json({
-      code: 422,
-      reason: "ValidationError",
-      message: tooSmallField
-        ? `Must be at least ${sizedFields[tooSmallField].min} characters long`
-        : `Must be at most ${sizedFields[tooLargeField].max} characters long`,
-      location: tooSmallField || tooLargeField
-    });
-  }
-
-  let {
-    email,
-    password,
-    first_name,
-    last_name,
-    dob = 1538349369782,
-    city = "",
-    state = "",
-    date_joined = Date.now()
-  } = req.body;
-  console.log(date_joined);
-  firstName = firstName.trim();
-  lastName = lastName.trim();
-
-  return res.json("made it!");
-  // return User.find({ username })
-  //   .count()
-  //   .then(count => {
-  //     if (count > 0) {
-  //       // There is an existing user with the same username
-  //       return Promise.reject({
-  //         code: 422,
-  //         reason: "ValidationError",
-  //         message: "Username already taken",
-  //         location: "username"
-  //       });
-  //     }
-  //     // If there is no existing user, hash the password
-  //     return User.hashPassword(password);
-  //   })
-  //   .then(hash => {
-  //     return User.create({
-  //       username,
-  //       password: hash,
-  //       firstName,
-  //       lastName
-  //     });
-  //   })
-  //   .then(user => {
-  //     return res.status(201).json(user.serialize());
-  //   })
-  //   .catch(err => {
-  //     // Forward validation errors on to the client, otherwise give a 500
-  //     // error because something unexpected has happened
-  //     if (err.reason === "ValidationError") {
-  //       return res.status(err.code).json(err);
-  //     }
-  //     res.status(500).json({ code: 500, message: "Internal server error" });
-  //   });
-});
-
-// Never expose all your users like below in a prod application
-// we're just doing this so we have a quick way to see
-// if we're creating users. keep in mind, you can also
-// verify this in the Mongo shell.
-// router.get("/", (req, res) => {
-//   return User.find()
-//     .then(users => res.json(users.map(user => user.serialize())))
-//     .catch(err => res.status(500).json({ message: "Internal server error" }));
-// });
 
 module.exports = { router };

@@ -9,6 +9,7 @@ const bodyParser = require("body-parser");
 const { router: usersRouter } = require("./users");
 const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
 const { router: disciplinesRouter } = require("./disciplines");
+const { router: userDisciplinesRouter } = require("./user_disciplines");
 
 // mongoose.Promise = global.Promise;
 
@@ -36,7 +37,8 @@ passport.use(jwtStrategy);
 
 app.use("/api/users/", usersRouter);
 app.use("/api/auth/", authRouter);
-app.use("/api/disciplines", disciplinesRouter);
+app.use("/api/disciplines/", disciplinesRouter);
+app.use("/api/user_disciplines/", userDisciplinesRouter);
 
 const jwtAuth = passport.authenticate("jwt", { session: false });
 
@@ -73,7 +75,6 @@ function runServer(port = PORT) {
         resolve();
       })
       .on("error", err => {
-        mongoose.disconnect();
         reject(err);
       });
   });
