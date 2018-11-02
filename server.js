@@ -10,12 +10,10 @@ const { router: usersRouter } = require("./users");
 const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
 const { router: disciplinesRouter } = require("./disciplines");
 const { router: userDisciplinesRouter } = require("./user_disciplines");
+const { router: commRouter } = require("./communication");
 
-// mongoose.Promise = global.Promise;
+const { PORT } = require("./config");
 
-const { PORT, DATABASE_URL } = require("./config");
-
-const jsonParser = bodyParser.json();
 const app = express();
 
 // Logging
@@ -39,25 +37,7 @@ app.use("/api/users/", usersRouter);
 app.use("/api/auth/", authRouter);
 app.use("/api/disciplines/", disciplinesRouter);
 app.use("/api/user_disciplines/", userDisciplinesRouter);
-
-const jwtAuth = passport.authenticate("jwt", { session: false });
-
-// A protected endpoint which needs a valid JWT to access it
-app.get("/api/protected", jwtAuth, (req, res) => {
-  return res.json({
-    data: "rosebud"
-  });
-});
-
-app.post("/api/message/:id", jsonParser, (req, res) => {
-  // TODO gets a message from the website and then does some send grid stuff!
-  let theMessage = {
-    to: req.params.id,
-    message: req.body.message
-  };
-
-  res.json(theMessage);
-});
+app.use("/api/communication/", commRouter);
 
 app.use("*", (req, res) => {
   return res.status(404).json({ message: "Not Found" });

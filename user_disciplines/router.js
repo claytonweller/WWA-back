@@ -107,11 +107,10 @@ router.post("/:id", jwtAuth, (req, res) => {
   // }
 
   let user_id = req.params.id;
-  let { type, active, experience, reward } = req.body;
-  type = type.trim();
+  let { type_id, active, experience, reward } = req.body;
 
   let uDisc = {
-    type,
+    type_id,
     active,
     experience,
     reward,

@@ -12,14 +12,14 @@ const createUserDiscipline = uDisc => {
     INSERT INTO user_disciplines (
       experience,
       active,
-      type,
+      type_id,
       reward,
       user_id
     )
     VALUES (
       ${uDisc.experience},
       '${uDisc.active}',
-      '${uDisc.type}',
+      '${uDisc.type_id}',
       '${uDisc.reward}',
       '${uDisc.user_id}'
     )
