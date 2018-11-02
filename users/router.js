@@ -20,6 +20,12 @@ const jsonParser = bodyParser.json();
 passport.use(jwtStrategy);
 router.use(jsonParser);
 
+// This function is used for DOB(date of birth) formatting/logic
+const convertToTimeStamp = inputDate => {
+  let fullDate = new Date(inputDate);
+  return Date.parse(fullDate);
+};
+
 router.get("/", jwtAuth, (req, res, next) => {
   // If the searcher is looking for a specific type of artist
   // we get a dscipline type, and return all of those users.
@@ -71,6 +77,7 @@ router.get("/:id", jwtAuth, (req, res) => {
 // This only happens after the first step.
 // Needs a flag for the steps completed.
 router.post("/", (req, res) => {
+  console.log(req.body);
   const requiredFields = ["email", "password", "last_name", "first_name"];
   const missingField = requiredFields.find(field => !(field in req.body));
   if (missingField) {
@@ -151,15 +158,16 @@ router.post("/", (req, res) => {
     password,
     first_name,
     last_name,
-    dob = 1538323879,
+    dob = 0,
     city = "",
-    state = "",
+    state = "CO",
     date_joined = Date.now()
   } = req.body;
 
   first_name = first_name.trim();
   last_name = last_name.trim();
   city = city.trim();
+  dob = convertToTimeStamp(dob);
 
   let userObject = {
     email,
@@ -223,7 +231,8 @@ router.put("/:id", jwtAuth, (req, res) => {
     "state",
     "equipment",
     "password",
-    "email"
+    "email",
+    "img_url"
   ];
 
   const createSetStatement = field => {

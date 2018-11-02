@@ -49,7 +49,13 @@ router.post("/:id", jwtAuth, (req, res) => {
     });
   }
 
-  const requiredFields = ["user_id", "experience", "type", "reward", "active"];
+  const requiredFields = [
+    "user_id",
+    "experience",
+    "type_id",
+    "reward",
+    "active"
+  ];
   const missingField = requiredFields.find(field => !(field in req.body));
   if (missingField) {
     return res.status(422).json({
@@ -88,14 +94,17 @@ router.post("/:id", jwtAuth, (req, res) => {
     });
   }
 
-  if (req.params.id !== req.body.user_id) {
-    return res.status(422).json({
-      code: 422,
-      reason: "ValidationError",
-      message: "Body ID and Params ID do not match",
-      location: "Body and/or Params"
-    });
-  }
+  // TODO figure out why the heck this isn't working
+
+  // console.log(req.params.id, req.body.user_id);
+  // if (req.params.id !== req.body.user_id) {
+  //   return res.status(422).json({
+  //     code: 422,
+  //     reason: "ValidationError",
+  //     message: "Body ID and Params ID do not match",
+  //     location: "Body and/or Params"
+  //   });
+  // }
 
   let user_id = req.params.id;
   let { type, active, experience, reward } = req.body;
