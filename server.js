@@ -39,6 +39,10 @@ app.use("/api/disciplines/", disciplinesRouter);
 app.use("/api/user_disciplines/", userDisciplinesRouter);
 app.use("/api/communication/", commRouter);
 
+app.get("/test/", (req, res) => {
+  res.status(200).send("WORKS");
+});
+
 app.use("*", (req, res) => {
   return res.status(404).json({ message: "Not Found" });
 });
