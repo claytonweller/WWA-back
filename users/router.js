@@ -5,6 +5,7 @@ const passport = require("passport");
 
 const {
   findUserById,
+  findUnfinishedUserById,
   findUserByEmail,
   findUsersByDiscipline,
   findAllUsers,
@@ -323,8 +324,7 @@ router.put("/:id", jwtAuth, (req, res) => {
   // This query first checks to make sure any email update is unique
   // then it updates the appropriate columns
   // then it returns the new user object.
-
-  db.query(findUserById(req.params.id))
+  db.query(findUnfinishedUserById(req.params.id))
     .then(dbres => {
       if (filteredFields.includes("email")) {
         return db.query(findUserByEmail(req.body.email));
@@ -356,6 +356,12 @@ router.put("/:id", jwtAuth, (req, res) => {
     })
     .then(() => {
       return db.query(findUserById(req.params.id));
+    })
+    .then(dbres => {
+      if (!dbres.rows[0]) {
+        return db.query(findUnfinishedUserById(req.params.id));
+      }
+      return dbres;
     })
     .then(user => {
       res.json(user.rows[0]);

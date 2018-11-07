@@ -40,6 +40,19 @@ const findUserById = id => {
   `;
 };
 
+const findUnfinishedUserById = id => {
+  return `
+  WITH filtered AS (
+    SELECT
+      users.email,
+      ${returnableFields}
+    FROM users
+    WHERE users.user_id = ${id}
+  )
+  ${userTemplate(false, "f.email,")}
+  `;
+};
+
 const findUserByEmail = email => {
   return `
   WITH filtered AS (
@@ -172,10 +185,11 @@ const createUser = user => {
 };
 
 module.exports = {
+  findAllUsers,
   findUserById,
+  findUnfinishedUserById,
   findUserByEmail,
   findUsersByDiscipline,
-  findAllUsers,
   findUserForAuth,
   createUser,
   validatePassword,
