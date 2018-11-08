@@ -4,6 +4,8 @@ const passport = require("passport");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 
+const { findUnfinishedUserById } = require("../users/models");
+const db = require("../db");
 const config = require("../config");
 const router = express.Router();
 
@@ -28,8 +30,15 @@ const jwtAuth = passport.authenticate("jwt", { session: false });
 
 // The user exchanges a valid JWT for a new one with a later expiration
 router.post("/refresh", jwtAuth, (req, res) => {
-  const authToken = createAuthToken(req.user);
-  res.json({ authToken });
+  db.query(findUnfinishedUserById(req.user.user_id))
+    .then(dbres => {
+      const authToken = createAuthToken(dbres.rows[0]);
+      res.json({ authToken });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json("Something went wrong on the server");
+    });
 });
 
 module.exports = { router };
