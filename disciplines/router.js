@@ -24,8 +24,9 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", jwtAuth, (req, res) => {
-  if (req.body.type) {
-    db.query(findDisciplineTypes(req.body.type))
+  console.log(req.body);
+  if (req.body.new_type) {
+    db.query(findDisciplineTypes(req.body.new_type))
       .then(dbres => {
         if (dbres.rows[0]) {
           return Promise.reject({
@@ -34,7 +35,7 @@ router.post("/", jwtAuth, (req, res) => {
             message: "This is already a discipline"
           });
         }
-        return db.query(createNewDisciplineType(req.body.type));
+        return db.query(createNewDisciplineType(req.body.new_type));
       })
       .then(() => db.query(findDisciplineTypes()))
       .then(dbres => res.status(201).json(dbres.rows))

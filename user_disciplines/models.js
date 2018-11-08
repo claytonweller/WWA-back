@@ -3,6 +3,7 @@ const findUserDisciplines = id => {
   return `
     SELECT *
     FROM user_disciplines d
+    INNER JOIN discipline_types t ON t.type_id = d.type_id  
     WHERE d.user_id = ${id}
   `;
 };

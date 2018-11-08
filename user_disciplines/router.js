@@ -20,6 +20,7 @@ passport.use(jwtStrategy);
 
 // return the disciplines of a specific user
 router.get("/:id", jwtAuth, (req, res) => {
+  console.log(req.user.user_id, req.params.id);
   if (req.user.user_id != req.params.id) {
     return res.status(422).json({
       code: 422,
@@ -130,6 +131,8 @@ router.post("/:id", jwtAuth, (req, res) => {
 });
 
 router.delete("/:userId/:disciplineId", jwtAuth, (req, res) => {
+  console.log(req.user.user_id, req.params.userId);
+
   if (req.user.user_id != req.params.userId) {
     return res.status(422).json({
       code: 422,
