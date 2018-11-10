@@ -20,6 +20,8 @@ router.use(jsonParser);
 sgMail.setApiKey(SENDGRID_KEY);
 
 router.post("/", jwtAuth, (req, res) => {
+  console.log(req.body);
+
   let msg = {
     from: req.user.email,
     subject: req.body.subject,
@@ -32,7 +34,10 @@ router.post("/", jwtAuth, (req, res) => {
   };
 
   db.query(findUserById(req.body.artistId))
-    .then(dbres => (msg.to = dbres.rows[0].email))
+    .then(dbres => {
+      console.log(dbres.rows);
+      msg.to = dbres.rows[0].email;
+    })
     .then(() => {
       console.log(msg);
       return sgMail.send(msg);
