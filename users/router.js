@@ -64,6 +64,12 @@ router.get("/:id", jwtAuth, (req, res) => {
 
   return db
     .query(findUserById(req.params.id))
+    .then(dbres => {
+      if (!dbres.rows[0]) {
+        return db.query(findUnfinishedUserById(req.params.id));
+      }
+      return dbres;
+    })
     .then(dbres => res.json(dbres.rows))
     .catch(err => {
       console.log(err);
@@ -78,7 +84,6 @@ router.get("/:id", jwtAuth, (req, res) => {
 // This only happens after the first step.
 // Needs a flag for the steps completed.
 router.post("/", (req, res) => {
-  console.log(req.body);
   const requiredFields = ["email", "password", "last_name", "first_name"];
   const missingField = requiredFields.find(field => !(field in req.body));
   if (missingField) {
@@ -202,7 +207,7 @@ router.post("/", (req, res) => {
       return db.query(findUserByEmail(email));
     })
     .then(dbres => {
-      return res.json(dbres.rows);
+      return res.status(201).json(dbres.rows);
     })
     .catch(err => {
       console.log(err);
@@ -364,7 +369,7 @@ router.put("/:id", jwtAuth, (req, res) => {
       return dbres;
     })
     .then(user => {
-      res.json(user.rows[0]);
+      res.status(201).json(user.rows[0]);
     })
     .catch(err => {
       console.log(err);

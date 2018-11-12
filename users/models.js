@@ -184,6 +184,13 @@ const createUser = user => {
   `;
 };
 
+const deleteUser = id => {
+  return `
+    DELETE FROM users
+    WHERE user_id = ${id}
+  `;
+};
+
 module.exports = {
   findAllUsers,
   findUserById,
@@ -193,5 +200,6 @@ module.exports = {
   findUserForAuth,
   createUser,
   validatePassword,
-  hashPassword
+  hashPassword,
+  deleteUser
 };

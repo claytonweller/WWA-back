@@ -41,4 +41,4 @@ router.post("/refresh", jwtAuth, (req, res) => {
     });
 });
 
-module.exports = { router };
+module.exports = { router, createAuthToken };
