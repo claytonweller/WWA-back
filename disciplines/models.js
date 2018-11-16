@@ -19,4 +19,15 @@ const createNewDisciplineType = type => {
   `;
 };
 
-module.exports = { findDisciplineTypes, createNewDisciplineType };
+const deleteDiscplineType = type_id => {
+  return `
+    DELETE FROM discipline_types
+    WHERE type_id = ${type_id}
+  `;
+};
+
+module.exports = {
+  findDisciplineTypes,
+  createNewDisciplineType,
+  deleteDiscplineType
+};

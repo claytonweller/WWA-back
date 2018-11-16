@@ -20,7 +20,6 @@ passport.use(jwtStrategy);
 
 // return the disciplines of a specific user
 router.get("/:id", jwtAuth, (req, res) => {
-  console.log(req.user.user_id, req.params.id);
   if (req.user.user_id != req.params.id) {
     return res.status(422).json({
       code: 422,
@@ -67,46 +66,6 @@ router.post("/:id", jwtAuth, (req, res) => {
     });
   }
 
-  const sizedFields = {
-    type: {
-      min: 4,
-      max: 25
-    }
-  };
-  const tooSmallField = Object.keys(sizedFields).find(
-    field =>
-      "min" in sizedFields[field] &&
-      req.body[field].trim().length < sizedFields[field].min
-  );
-  const tooLargeField = Object.keys(sizedFields).find(
-    field =>
-      "max" in sizedFields[field] &&
-      req.body[field].trim().length > sizedFields[field].max
-  );
-
-  if (tooSmallField || tooLargeField) {
-    return res.status(422).json({
-      code: 422,
-      reason: "ValidationError",
-      message: tooSmallField
-        ? `Must be at least ${sizedFields[tooSmallField].min} characters long`
-        : `Must be at most ${sizedFields[tooLargeField].max} characters long`,
-      location: tooSmallField || tooLargeField
-    });
-  }
-
-  // TODO figure out why the heck this isn't working
-
-  // console.log(req.params.id, req.body.user_id);
-  // if (req.params.id !== req.body.user_id) {
-  //   return res.status(422).json({
-  //     code: 422,
-  //     reason: "ValidationError",
-  //     message: "Body ID and Params ID do not match",
-  //     location: "Body and/or Params"
-  //   });
-  // }
-
   let user_id = req.params.id;
   let { type_id, active, experience, reward } = req.body;
 
@@ -120,7 +79,6 @@ router.post("/:id", jwtAuth, (req, res) => {
 
   db.query(createUserDiscipline(uDisc))
     .then(() => {
-      console.log("discipline created");
       return db.query(findUserDisciplines(req.params.id));
     })
     .then(dbres => res.status(201).json(dbres.rows))
@@ -131,8 +89,6 @@ router.post("/:id", jwtAuth, (req, res) => {
 });
 
 router.delete("/:userId/:disciplineId", jwtAuth, (req, res) => {
-  console.log(req.user.user_id, req.params.userId);
-
   if (req.user.user_id != req.params.userId) {
     return res.status(422).json({
       code: 422,

@@ -24,29 +24,37 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", jwtAuth, (req, res) => {
-  console.log(req.body);
-  if (req.body.new_type) {
-    db.query(findDisciplineTypes(req.body.new_type))
-      .then(dbres => {
-        if (dbres.rows[0]) {
-          return Promise.reject({
-            code: 422,
-            reason: "ValidationError",
-            message: "This is already a discipline"
-          });
-        }
-        return db.query(createNewDisciplineType(req.body.new_type));
-      })
-      .then(() => db.query(findDisciplineTypes()))
-      .then(dbres => res.status(201).json(dbres.rows))
-      .catch(err => {
-        console.log(err);
-        if (err.reason === "ValidationError") {
-          return res.status(err.code).json(err);
-        }
-        res.status(500).json({ code: 500, message: "Internal server error" });
-      });
+  const requiredFields = ["new_type"];
+  const missingField = requiredFields.find(field => !(field in req.body));
+  if (missingField) {
+    return res.status(422).json({
+      code: 422,
+      reason: "ValidationError",
+      message: "Missing field",
+      location: missingField
+    });
   }
+
+  db.query(findDisciplineTypes(req.body.new_type))
+    .then(dbres => {
+      if (dbres.rows[0]) {
+        return Promise.reject({
+          code: 422,
+          reason: "ValidationError",
+          message: "This is already a discipline"
+        });
+      }
+      return db.query(createNewDisciplineType(req.body.new_type));
+    })
+    .then(() => db.query(findDisciplineTypes()))
+    .then(dbres => res.status(201).json(dbres.rows))
+    .catch(err => {
+      console.log(err);
+      if (err.reason === "ValidationError") {
+        return res.status(err.code).json(err);
+      }
+      res.status(500).json({ code: 500, message: "Internal server error" });
+    });
 });
 
 module.exports = { router };
