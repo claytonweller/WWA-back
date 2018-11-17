@@ -10,7 +10,8 @@ const {
   findUsersByDiscipline,
   findAllUsers,
   createUser,
-  hashPassword
+  hashPassword,
+  fixSingleQuotesForSQL
 } = require("./models");
 const db = require("../db");
 const { jwtStrategy } = require("../auth");
@@ -95,7 +96,7 @@ router.post("/", (req, res) => {
     });
   }
 
-  const stringFields = ["email", "password", "first_name", "last_name"];
+  const stringFields = ["email", "password", "first_name", "last_name", "city"];
   const nonStringField = stringFields.find(
     field => field in req.body && typeof req.body[field] !== "string"
   );
@@ -170,9 +171,9 @@ router.post("/", (req, res) => {
     date_joined = Date.now()
   } = req.body;
 
-  first_name = first_name.trim();
-  last_name = last_name.trim();
-  city = city.trim();
+  first_name = fixSingleQuotesForSQL(first_name.trim());
+  last_name = fixSingleQuotesForSQL(last_name.trim());
+  city = fixSingleQuotesForSQL(city.trim());
   dob = convertToTimeStamp(dob);
 
   let userObject = {
@@ -241,7 +242,20 @@ router.put("/:id", jwtAuth, (req, res) => {
     "img_url"
   ];
 
+  const stringFields = [
+    "first_name",
+    "last_name",
+    "desired_projects",
+    "bio",
+    "city",
+    "equipment",
+    "password"
+  ];
+
   const createSetStatement = field => {
+    if (stringFields.includes(field)) {
+      return `${field} = '${fixSingleQuotesForSQL(req.body[field])}' `;
+    }
     return `${field} = '${req.body[field]}' `;
   };
 
@@ -249,11 +263,7 @@ router.put("/:id", jwtAuth, (req, res) => {
     updatedableFields.includes(field)
   );
 
-  const allSetStatments = filteredFields.map(field => {
-    return createSetStatement(field);
-  });
-
-  if (!allSetStatments[0]) {
+  if (!filteredFields[0]) {
     return res.status(422).json({
       code: 422,
       reason: "ValidationError",
@@ -290,7 +300,7 @@ router.put("/:id", jwtAuth, (req, res) => {
       max: 20
     },
     desired_projects: {
-      max: 150
+      max: 250
     },
     password: {
       min: 8,
@@ -320,8 +330,8 @@ router.put("/:id", jwtAuth, (req, res) => {
       code: 422,
       reason: "ValidationError",
       message: tooSmallField
-        ? `Must be at least ${sizedFields[tooSmallField].min} characters long`
-        : `Must be at most ${sizedFields[tooLargeField].max} characters long`,
+        ? `Min ${sizedFields[tooSmallField].min} characters long`
+        : `Max ${sizedFields[tooLargeField].max} characters long`,
       location: tooSmallField || tooLargeField
     });
   }
@@ -348,13 +358,25 @@ router.put("/:id", jwtAuth, (req, res) => {
           location: "email"
         });
       }
+      if (req.body.password) {
+        return hashPassword(req.body.password);
+      }
       return;
     })
-    .then(() => {
+    .then(hash => {
+      if (hash) {
+        req.body.password = hash;
+      }
+      console.log(filteredFields);
+      return filteredFields.map(field => {
+        return createSetStatement(field);
+      });
+    })
+    .then(sql => {
       return db.query(
         `
           UPDATE users
-          SET ${allSetStatments}
+          SET ${sql}
           WHERE user_id = '${req.params.id}'
         `
       );

@@ -1,8 +1,21 @@
 const bcrypt = require("bcryptjs");
 
 ////// Useful functions ///////////
+
+// Got this bad boy off of stack overflow.
+String.prototype.replaceAll = function(str1, str2, ignore) {
+  return this.replace(
+    new RegExp(
+      str1.replace(/([\/\,\!\\\^\$\{\}\[\]\(\)\.\*\+\?\|\<\>\-\&])/g, "\\$&"),
+      ignore ? "gi" : "g"
+    ),
+    typeof str2 == "string" ? str2.replace(/\$/g, "$$$$") : str2
+  );
+};
+
+// Single quotes ruin SQL queries so all text inputs must have this function
 const fixSingleQuotesForSQL = string => {
-  return string.replace("'", "''");
+  return string.replaceAll("'", "''");
 };
 
 const validatePassword = function(pass, dbPass) {
@@ -201,5 +214,6 @@ module.exports = {
   createUser,
   validatePassword,
   hashPassword,
-  deleteUser
+  deleteUser,
+  fixSingleQuotesForSQL
 };
