@@ -15,7 +15,10 @@ String.prototype.replaceAll = function(str1, str2, ignore) {
 
 // Single quotes ruin SQL queries so all text inputs must have this function
 const fixSingleQuotesForSQL = string => {
-  return string.replaceAll("'", "''");
+  if (string) {
+    return string.replaceAll("'", "''");
+  }
+  return "";
 };
 
 const validatePassword = function(pass, dbPass) {
