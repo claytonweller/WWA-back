@@ -1,4 +1,7 @@
 //// USER DISCIPLINES
+
+// This finds all the displines of a specific user.
+// This us used in the disciplines modal form
 const findUserDisciplines = id => {
   return `
     SELECT *
@@ -8,6 +11,7 @@ const findUserDisciplines = id => {
   `;
 };
 
+// This creates a new discipline for a user.
 const createUserDiscipline = uDisc => {
   return `
     INSERT INTO user_disciplines (
@@ -28,6 +32,7 @@ const createUserDiscipline = uDisc => {
   `;
 };
 
+// Used in the user discipline list
 const deleteUserDiscipline = id => {
   return `
     DELETE FROM user_disciplines

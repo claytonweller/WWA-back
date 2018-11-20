@@ -21,10 +21,12 @@ const fixSingleQuotesForSQL = string => {
   return "";
 };
 
+// Check the password
 const validatePassword = function(pass, dbPass) {
   return bcrypt.compare(pass, dbPass);
 };
 
+// Scramble the password
 const hashPassword = function(password) {
   return bcrypt.hash(password, 10);
 };
@@ -32,6 +34,7 @@ const hashPassword = function(password) {
 /////// USERS - Database queries //////////
 
 // These are all the various filters that can be used to find artists/users
+// TODO - add a query which returns a number of random users
 
 const findAllUsers = () => {
   return `

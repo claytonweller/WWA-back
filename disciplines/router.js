@@ -14,6 +14,9 @@ const jsonParser = bodyParser.json();
 passport.use(jwtStrategy);
 router.use(jsonParser);
 
+// Reuturns ALL discipline types.
+// Used in the drop down menus for searches and creation
+
 router.get("/", (req, res) => {
   db.query(findDisciplineTypes())
     .then(dbres => res.json(dbres.rows))
@@ -23,6 +26,8 @@ router.get("/", (req, res) => {
     });
 });
 
+// Creates a new discipline type,
+// Used on the add user discipline form.
 router.post("/", jwtAuth, (req, res) => {
   const requiredFields = ["new_type"];
   const missingField = requiredFields.find(field => !(field in req.body));

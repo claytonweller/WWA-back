@@ -88,6 +88,7 @@ router.post("/:id", jwtAuth, (req, res) => {
     });
 });
 
+// This removes a user discipline
 router.delete("/:userId/:disciplineId", jwtAuth, (req, res) => {
   if (req.user.user_id != req.params.userId) {
     return res.status(422).json({
@@ -99,7 +100,6 @@ router.delete("/:userId/:disciplineId", jwtAuth, (req, res) => {
 
   db.query(deleteUserDiscipline(req.params.disciplineId))
     .then(() => {
-      console.log(req.params.userId);
       return db.query(findUserDisciplines(req.params.userId));
     })
     .then(dbres => res.json(dbres.rows))

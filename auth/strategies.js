@@ -5,6 +5,7 @@ const { findUserForAuth, validatePassword } = require("../users/models");
 const { JWT_SECRET } = require("../config");
 const db = require("../db");
 
+// This authenticates user information on login
 const localStrategy = new LocalStrategy(
   {
     usernameField: "email",
@@ -41,6 +42,7 @@ const localStrategy = new LocalStrategy(
   }
 );
 
+// This is used to refresh auth tokens when a user logs in a second time.
 const jwtStrategy = new JwtStrategy(
   {
     secretOrKey: JWT_SECRET,

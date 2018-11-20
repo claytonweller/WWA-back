@@ -1,3 +1,7 @@
+// Returns all discipline types by default
+// But if a type is put in you'll get the specific type back
+// The later is primarily used for searching for specific users
+
 const findDisciplineTypes = type => {
   let typeFinder = "";
   if (type) {
@@ -19,6 +23,7 @@ const createNewDisciplineType = type => {
   `;
 };
 
+// This is currently only used for testing
 const deleteDiscplineType = type_id => {
   return `
     DELETE FROM discipline_types

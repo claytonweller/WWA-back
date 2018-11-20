@@ -83,7 +83,6 @@ router.get("/:id", jwtAuth, (req, res) => {
 
 // Post to register a new user
 // This only happens after the first step.
-// Needs a flag for the steps completed.
 router.post("/", (req, res) => {
   const requiredFields = ["email", "password", "last_name", "first_name"];
   const missingField = requiredFields.find(field => !(field in req.body));
@@ -219,6 +218,10 @@ router.post("/", (req, res) => {
     });
 });
 
+// THis updates a user with new info. After the first modal screen this
+// is the only thing that gets called when a user submits info.
+// Unless it's about their specific disciplines (See user_disciplines)
+
 router.put("/:id", jwtAuth, (req, res) => {
   if (req.user.user_id != req.params.id) {
     return res.status(422).json({
@@ -242,6 +245,9 @@ router.put("/:id", jwtAuth, (req, res) => {
     "img_url"
   ];
 
+  // We have to be very careful with strings in SQL.
+  // In models we have a function that fixes the information so
+  // our calls aren't ruined by a single apostrophe
   const stringFields = [
     "first_name",
     "last_name",
@@ -251,6 +257,10 @@ router.put("/:id", jwtAuth, (req, res) => {
     "equipment",
     "password"
   ];
+
+  if (req.body.dob) {
+    req.body.dob = convertToTimeStamp(req.body.dob);
+  }
 
   const createSetStatement = field => {
     if (stringFields.includes(field)) {
@@ -367,7 +377,6 @@ router.put("/:id", jwtAuth, (req, res) => {
       if (hash) {
         req.body.password = hash;
       }
-      console.log(filteredFields);
       return filteredFields.map(field => {
         return createSetStatement(field);
       });
@@ -385,6 +394,8 @@ router.put("/:id", jwtAuth, (req, res) => {
       return db.query(findUserById(req.params.id));
     })
     .then(dbres => {
+      // Occasionally a user will not have any discplines which will break the
+      // typical SQL request
       if (!dbres.rows[0]) {
         return db.query(findUnfinishedUserById(req.params.id));
       }
