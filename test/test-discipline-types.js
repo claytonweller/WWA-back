@@ -44,7 +44,10 @@ describe("/api/disciplines/", function() {
   });
 
   after(function() {
-    return db.query(deleteUser(user1.user_id)).then(() => closeServer());
+    return db
+      .query(deleteUser(user1.user_id))
+      .then(() => closeServer())
+      .then(() => console.log("END TYPES"));
   });
 
   beforeEach(function() {});

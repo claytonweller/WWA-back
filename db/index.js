@@ -1,8 +1,13 @@
 const { Pool } = require("pg");
-const { DATABASE_URL } = require("../config");
+const { DATABASE_URL, ENVIRONMENT, TEST_DATABASE_URL } = require("../config");
+
+let url = DATABASE_URL;
+if (ENVIRONMENT === "test") {
+  url = TEST_DATABASE_URL;
+}
 
 const pool = new Pool({
-  connectionString: DATABASE_URL
+  connectionString: url
 });
 
 // This is the basic POSTGRESql server query

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "mocha --exit"
+    "test": "export ENVIRONMENT=test && mocha --exit"
   },
   "keywords": [],
   "author": "",

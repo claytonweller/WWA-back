@@ -46,11 +46,15 @@ describe("/api/user_disciplines/", function() {
         let resUser = res.body[0];
         user1.user_id = uDisc.user_id = resUser.user_id;
         authToken = createAuthToken(user1);
-      });
+      })
+      .catch(err => console.log(err));
   });
 
   after(function() {
-    return db.query(deleteUser(user1.user_id)).then(() => closeServer());
+    return db
+      .query(deleteUser(user1.user_id))
+      .then(() => closeServer())
+      .then(() => console.log("END UDISC"));
   });
 
   beforeEach(function() {});

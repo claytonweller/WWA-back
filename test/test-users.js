@@ -28,9 +28,12 @@ describe("/api/user", function() {
   before(function() {
     return runServer();
   });
-
+  // deleteUser(user1.user_id)
   after(function() {
-    return db.query(deleteUser(user1.user_id)).then(() => closeServer());
+    return db
+      .query(deleteUser(user1.user_id))
+      .then(() => closeServer())
+      .then(() => console.log("END USER"));
   });
 
   beforeEach(function() {});
@@ -141,7 +144,7 @@ describe("/api/user", function() {
 
     ////// GET ALL USERS
 
-    describe("GET ALL USERS", function() {
+    describe("GET ALL USERS WITH USER DISCIPLINES", function() {
       it("Should return an array with user objects", function() {
         return chai
           .request(app)

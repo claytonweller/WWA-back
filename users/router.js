@@ -46,7 +46,9 @@ router.get("/", jwtAuth, (req, res, next) => {
   // TODO: Sort by some attribute
   return db
     .query(findAllUsers())
-    .then(dbres => res.json(dbres.rows))
+    .then(dbres => {
+      res.json(dbres.rows);
+    })
     .catch(err => {
       console.log(err);
       res.status(500).json("Something went wrong on the server");
