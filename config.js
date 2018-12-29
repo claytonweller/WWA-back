@@ -6,3 +6,6 @@ exports.JWT_SECRET = process.env.JWT_SECRET;
 exports.JWT_EXPIRY = process.env.JWT_EXPIRY || "7d";
 exports.SENDGRID_KEY = process.env.SENDGRID_KEY;
 exports.ENVIRONMENT = process.env.ENVIRONMENT;
+exports.CLOUDINARY_NAME = process.env.CLOUDINARY_NAME;
+exports.CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+exports.CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;

@@ -26,12 +26,8 @@ At any time artists can change their info, and add/remove disciplines to their p
 
 ## Screenshots
 
-TODO: Add landing page screenshot
-TODO: Add search page screenshot
-TODO: add mosdal screenshot
-
-<!-- ![Screenshot of the landing page](https://imgur.com/19S0wHO.jpg) -->
-<!-- ![Screenshot of the dashboard](https://imgur.com/dthcTDy.jpg) -->
+![Screenshot of the landing page](https://imgur.com/9QBkZhn.jpg)
+![Screenshot of the search page](https://imgur.com/Q6dsO5e.jpg)
 
 ## Technology used
 

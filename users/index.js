@@ -1,4 +1,5 @@
 "use strict";
-const { router } = require("./router");
+const { router: users } = require("./router");
+const { router: images } = require("./images");
 
-module.exports = { router };
+module.exports = { users, images };

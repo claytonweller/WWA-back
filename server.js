@@ -4,7 +4,8 @@ const express = require("express");
 const morgan = require("morgan");
 const passport = require("passport");
 
-const { router: usersRouter } = require("./users");
+const { users: usersRouter } = require("./users");
+const { images: imagesRouter } = require("./users");
 const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
 const { router: disciplinesRouter } = require("./disciplines");
 const { router: userDisciplinesRouter } = require("./user_disciplines");
@@ -32,6 +33,7 @@ passport.use(localStrategy);
 passport.use(jwtStrategy);
 
 app.use("/api/users/", usersRouter);
+app.use("/api/images/", imagesRouter);
 app.use("/api/auth/", authRouter);
 app.use("/api/disciplines/", disciplinesRouter);
 app.use("/api/user_disciplines/", userDisciplinesRouter);
