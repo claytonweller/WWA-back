@@ -2,6 +2,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cloudinary = require("cloudinary");
+const formData = require("express-form-data");
+
 // const passport = require("passport");
 const {
   CLOUDINARY_NAME,
@@ -28,6 +30,7 @@ const router = express.Router();
 // passport.use(jwtStrategy);
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
+router.use(formData.parse());
 
 cloudinary.config({
   cloud_name: CLOUDINARY_NAME,
@@ -37,8 +40,11 @@ cloudinary.config({
 
 router.post("/", (req, res) => {
   let imageFile = req.body;
+  console.log(req.files);
   console.log(imageFile);
-  res.status(200).json(imageFile);
+
+  res.status(200).json(req.body);
+
   // cloudinary.uploader.upload()
 });
 

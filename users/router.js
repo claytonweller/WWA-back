@@ -55,6 +55,11 @@ router.get("/", jwtAuth, (req, res, next) => {
     });
 });
 
+router.post("/test", (req, res) => {
+  console.log(req.body);
+  res.status(200).json(req.body);
+});
+
 // Find a specic user's info
 router.get("/:id", jwtAuth, (req, res) => {
   if (req.user.user_id != req.params.id) {
