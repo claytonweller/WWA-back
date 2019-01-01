@@ -9,6 +9,7 @@ const {
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET
 } = require("../config");
+const { findUserById } = require("./models");
 
 const db = require("../db");
 const { jwtStrategy } = require("../auth");
@@ -29,6 +30,10 @@ cloudinary.config({
 
 router.post("/", jwtAuth, (req, res) => {
   let userId = req.user.user_id;
+
+  if (req.files.imageFile.size / 1024 / 1024 > 0.5) {
+    res.status(413).json({ msg: "Image too large" });
+  }
   cloudinary.uploader
     .upload(req.files.imageFile.path)
     .then(res => {
@@ -40,7 +45,10 @@ router.post("/", jwtAuth, (req, res) => {
         `
       );
     })
-    .then(() => res.status(200))
+    .then(() => db.query(findUserById(userId)))
+    .then(dbres => {
+      return res.status(200).json({ img_url: dbres.rows[0].img_url });
+    })
     .catch(err => console.log(err));
 });
 
